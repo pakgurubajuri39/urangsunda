@@ -1,0 +1,31 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Cek Sunda Life</title>
+<style>body{font:17px/1.5 -apple-system,system-ui,sans-serif;background:#120f0d;color:#ffeccb;margin:0;padding:18px}
+h1{font-size:22px;color:#ffc94d}.r{padding:10px 12px;margin:8px 0;border-radius:10px;background:#221c17;border:1px solid #4a3b2c}
+.ok{border-color:#4caf50}.bad{border-color:#e0534f;background:#3a1a18}b{color:#fff}a{color:#7cc4ff}small{color:#bba98f}</style></head><body>
+<h1>Cek Sunda Life (diagnosis)</h1><p><small>Buka halaman ini di iPad/iPhone yang bermasalah, tunggu sampai selesai, lalu kirim tangkapan layarnya.</small></p>
+<div id="out"></div><p><a href="index.html">Buka game</a></p>
+<script>
+const out=document.getElementById('out');
+function row(ok,t){const d=document.createElement('div');d.className='r '+(ok?'ok':'bad');d.innerHTML=(ok?'OK: ':'MASALAH: ')+t;out.appendChild(d);}
+(async()=>{
+ row(true,'Browser: <b>'+navigator.userAgent.replace(/</g,'')+'</b>');
+ row(location.protocol==='https:'||location.hostname==='localhost','Alamat memakai <b>'+location.protocol+'</b>'+(location.protocol==='https:'?'':' (harus https)'));
+ let gl=null;try{gl=document.createElement('canvas').getContext('webgl2');}catch(e){}
+ row(!!gl,'WebGL 2: <b>'+(gl?'didukung':'TIDAK didukung (butuh iOS/iPadOS 15+, matikan Mode Daya Rendah)')+'</b>');
+ row(typeof WebAssembly==='object','WebAssembly: <b>'+(typeof WebAssembly==='object'?'didukung':'tidak')+'</b>');
+ let man;try{man=await (await fetch('cek-manifest.json',{cache:'no-store'})).json();}catch(e){row(false,'cek-manifest.json tidak ditemukan. Pastikan SEMUA berkas ikut terunggah.');return;}
+ for(const f of Object.keys(man)){
+  try{
+   const r=await fetch(f+'?cek='+Date.now(),{cache:'no-store'});
+   if(!r.ok){row(false,f+' tidak bisa diunduh (HTTP '+r.status+'). Berkas ini belum terunggah/terdeploy.');continue;}
+   let n=0;const rd=r.body.getReader();for(;;){const x=await rd.read();if(x.done)break;n+=x.value.length;}
+   const ct=r.headers.get('content-type')||'';
+   const sizeOk=n===man[f];
+   let extra='';if(f.endsWith('.wasm')&&!/wasm/.test(ct)){extra=' Tipe berkas <b>'+ct+'</b> (seharusnya application/wasm).';}
+   row(sizeOk,f+': <b>'+(n/1048576).toFixed(2)+' MB</b> terunduh, seharusnya <b>'+(man[f]/1048576).toFixed(2)+' MB</b>'+(sizeOk?'':' (BERBEDA, berkas rusak/terpotong)')+extra);
+  }catch(e){row(false,f+' gagal diunduh: '+String(e).replace(/</g,''));}
+ }
+ row(true,'Selesai diperiksa.');
+})();
+</script></body></html>
